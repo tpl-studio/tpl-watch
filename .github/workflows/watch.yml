@@ -1,15 +1,15 @@
-# TPL watcher — every 5 minutes, 15:00~03:00 KST. Checks public RSS feeds; when a new confirmed big-club story shows up,
+# TPL watcher — every 5 minutes, 24 hours a day. Checks public RSS feeds; when a new confirmed big-club story shows up,
 # it starts the private card workflow right away (workflow_dispatch). No secrets in this repository's files.
 #
 # Secrets (Settings → Secrets and variables → Actions):
 #   TPL_DISPATCH_TOKEN  fine-grained token — ONE private repository, permission "Actions: Read and write" only
+#                       (read = this month's run history for the free-minute guard, write = start the workflow)
 #   TPL_DISPATCH_REPO   owner/name of that private repository (kept secret so it never shows in public logs)
 name: TPL Watch
 
 on:
   schedule:
-    - cron: "*/5 6-17 * * *"   # 15:00~02:55 KST
-    - cron: "0 18 * * *"       # 03:00 KST
+    - cron: "*/5 * * * *"      # every 5 minutes, all day
   workflow_dispatch:
     inputs:
       ping:

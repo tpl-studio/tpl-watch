@@ -1,4 +1,4 @@
-"""TPL watcher — runs every 5 minutes on GitHub Actions (public repo, standard library only).
+"""TPL watcher — runs every 5 minutes, 24 hours a day, on GitHub Actions (public repo, standard library only).
 
 1. Reads public football RSS feeds (watch.toml).
 2. Keeps only big-club headlines that look like a Romano "Here we go", a Romano exit report or a club announcement (rules.py).
@@ -7,18 +7,22 @@
 
 Follow-up headlines about a story it already reported (same big club + same proper noun) are skipped for
 story_hours: the private repo's 30-minute schedule picks those up as status updates.
+Budget guard: before each dispatch it reads the private repo's run history for this month and only dispatches while
+used + days_left × base_daily_min + dispatch_cost_min ≤ monthly_free_min − monthly_reserve_min (free plan protection).
 No secrets live in this repository: the token and the target repository name come from GitHub Secrets.
 """
 from __future__ import annotations
 
+import calendar
 import json
+import math
 import os
 import re
 import sys
 import tomllib
 import urllib.error
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -142,6 +146,45 @@ def dispatch(token: str, repo: str, conf: dict, opener=urllib.request.urlopen) -
         return False, type(e).__name__
 
 
+def _get(url: str, token: str, opener) -> dict:
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+                                               "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "tpl-watch"})
+    with opener(req, timeout=20) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def month_used(token: str, repo: str, now: datetime, opener=urllib.request.urlopen) -> int | None:
+    """Minutes the private repo used this month (UTC month, like GitHub billing): every run rounded up to a minute.
+    Skipped runs cost nothing. None if it cannot be read."""
+    start = now.astimezone(timezone.utc).strftime("%Y-%m-01")
+    total = 0
+    try:
+        for page in range(1, 11):
+            d = _get(f"https://api.github.com/repos/{repo}/actions/runs?per_page=100&page={page}&created=%3E%3D{start}",
+                     token, opener)
+            runs = d.get("workflow_runs", [])
+            for r in runs:
+                if r.get("conclusion") == "skipped" or not r.get("run_started_at"):
+                    continue
+                a = datetime.fromisoformat(r["run_started_at"].replace("Z", "+00:00"))
+                b = datetime.fromisoformat((r.get("updated_at") or r["run_started_at"]).replace("Z", "+00:00"))
+                total += max(1, math.ceil((b - a).total_seconds() / 60))
+            if len(runs) < 100:
+                return total
+        return total
+    except Exception:  # noqa: BLE001 — unreadable → caller falls back to the small daily cap
+        return None
+
+
+def budget_ok(used: int, now: datetime, conf: dict) -> tuple[bool, str]:
+    w = conf.get("watch", {})
+    u = now.astimezone(timezone.utc)
+    days_left = calendar.monthrange(u.year, u.month)[1] - u.day + 1
+    proj = used + days_left * float(w.get("base_daily_min", 58)) + float(w.get("dispatch_cost_min", 3))
+    limit = float(w.get("monthly_free_min", 2000)) - float(w.get("monthly_reserve_min", 100))
+    return proj <= limit, f"month used {used} min, projected {proj:.0f} / limit {limit:.0f}"
+
+
 def output(**kv) -> None:
     p = os.environ.get("GITHUB_OUTPUT")
     if p:
@@ -153,7 +196,7 @@ def output(**kv) -> None:
 def run(now: datetime | None = None, fetcher=R.fetch, opener=urllib.request.urlopen, env=os.environ) -> dict:
     conf = load_conf()
     now = now or R.now_kst()
-    if not R.in_window(now, conf):
+    if not conf.get("watch", {}).get("all_day") and not R.in_window(now, conf):
         return {"why": "outside 15:00-03:00 KST", "changed": False}
     before = load_state()
     state = prune(before, now, conf)
@@ -173,11 +216,23 @@ def run(now: datetime | None = None, fetcher=R.fetch, opener=urllib.request.urlo
         for r in p["new"][:8]:
             print(f"  new [{r['kind']}] {r['title'][:100]} — {r['publisher']}")
         token, repo = env.get("DISPATCH_TOKEN", "").strip(), env.get("DISPATCH_REPO", "").strip()
-        cap = int(conf.get("watch", {}).get("max_dispatch_per_day", 20))
+        w = conf.get("watch", {})
+        cap = int(w.get("max_dispatch_per_day", 10))
+        n_today = fired_today(state, now, conf)
+        guard = ""
+        if token and repo and n_today < cap:
+            used = month_used(token, repo, now, opener)
+            if used is None:
+                cap = min(cap, int(w.get("fallback_cap", 3)))
+                res["budget"] = "usage unreadable — small daily cap"
+            else:
+                ok_b, res["budget"] = budget_ok(used, now, conf)
+                guard = "" if ok_b else "budget"
         if not (token and repo):
             res["why"] = "secrets TPL_DISPATCH_TOKEN / TPL_DISPATCH_REPO not set — detected only"
-        elif fired_today(state, now, conf) >= cap:
-            res["why"] = f"daily dispatch cap {cap} reached — the 30-minute schedule will pick it up"
+        elif n_today >= cap or guard:
+            res["why"] = (("monthly free-minute guard" if guard else f"daily dispatch cap {cap} reached")
+                          + " — left to the private 30-minute schedule (15:00-03:00)")
             for r in p["new"]:
                 state["seen"][r["id"]] = now.isoformat()
         else:
