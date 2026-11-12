@@ -1,0 +1,114 @@
+# TPL watcher settings (generated — do not edit by hand)
+
+window_start = "15:00"
+window_end = "03:00"
+grace_min = 60
+fresh_hours = 14
+
+[watch]
+workflow = "transfer.yml"
+ref = "main"
+max_dispatch_per_day = 3
+story_hours = 24
+seen_days = 3
+
+[[big_clubs]]
+key = "manutd"
+names = ["Manchester United", "Man Utd", "Man United", "Man U", "MUFC"]
+
+[[big_clubs]]
+key = "mancity"
+names = ["Manchester City", "Man City", "MCFC"]
+
+[[big_clubs]]
+key = "liverpool"
+names = ["Liverpool", "LFC"]
+
+[[big_clubs]]
+key = "arsenal"
+names = ["Arsenal", "Gunners"]
+
+[[big_clubs]]
+key = "chelsea"
+names = ["Chelsea"]
+
+[[big_clubs]]
+key = "tottenham"
+names = ["Tottenham", "Tottenham Hotspur", "Spurs"]
+
+[[big_clubs]]
+key = "realmadrid"
+names = ["Real Madrid"]
+
+[[big_clubs]]
+key = "barcelona"
+names = ["Barcelona", "Barca", "Barça", "FC Barcelona"]
+
+[[big_clubs]]
+key = "atletico"
+names = ["Atletico Madrid", "Atlético Madrid", "Atletico", "Atlético", "Atleti"]
+
+[[big_clubs]]
+key = "bayern"
+names = ["Bayern Munich", "Bayern München", "Bayern", "FC Bayern"]
+
+[[big_clubs]]
+key = "dortmund"
+names = ["Borussia Dortmund", "Dortmund", "BVB"]
+
+[[big_clubs]]
+key = "psg"
+names = ["PSG", "Paris Saint-Germain", "Paris Saint Germain", "Paris SG"]
+
+[[big_clubs]]
+key = "juventus"
+names = ["Juventus", "Juve"]
+
+[[big_clubs]]
+key = "inter"
+names = ["Inter Milan", "Internazionale", "Inter"]
+not_names = ["Inter Miami"]
+
+[[big_clubs]]
+key = "milan"
+names = ["AC Milan", "Milan"]
+not_names = ["Inter Milan"]
+
+[[big_clubs]]
+key = "napoli"
+names = ["Napoli", "SSC Napoli"]
+
+[[feeds]]
+name = "Google 뉴스 · Here we go"
+url = "https://news.google.com/rss/search?q=%22here+we+go%22+Romano+when:1d&hl=en-GB&gl=GB&ceid=GB:en"
+aggregator = true
+
+[[feeds]]
+name = "Google 뉴스 · 로마노 경질·사임"
+url = "https://news.google.com/rss/search?q=Romano+(sacked+OR+fired+OR+dismissed+OR+%22parted+ways%22+OR+resigns+OR+%22steps+down%22)+when:1d&hl=en-GB&gl=GB&ceid=GB:en"
+aggregator = true
+
+[[feeds]]
+name = "Google 뉴스 · 로마노 보도"
+url = "https://news.google.com/rss/search?q=%22Fabrizio+Romano%22+when:1d&hl=en-GB&gl=GB&ceid=GB:en"
+aggregator = true
+
+[[feeds]]
+name = "Google 뉴스 · 공식 발표"
+url = "https://news.google.com/rss/search?q=football+(%22completes+move%22+OR+%22confirm+signing%22+OR+%22confirms+signing%22+OR+%22officially+joins%22+OR+%22signs+for%22+OR+%22sacked%22+OR+%22appointed%22+OR+%22new+head+coach%22+OR+%22new+contract%22)+when:1d&hl=en-GB&gl=GB&ceid=GB:en"
+aggregator = true
+
+[[feeds]]
+name = "Sky Sports Transfers"
+url = "https://www.skysports.com/rss/12691"
+outlet = "Sky Sports"
+
+[[feeds]]
+name = "BBC Sport Football"
+url = "https://feeds.bbci.co.uk/sport/football/rss.xml"
+outlet = "BBC Sport"
+
+[[feeds]]
+name = "Guardian Transfer window"
+url = "https://www.theguardian.com/football/transfer-window/rss"
+outlet = "The Guardian"

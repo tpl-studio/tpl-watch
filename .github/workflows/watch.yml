@@ -1,0 +1,61 @@
+# TPL watcher — every 5 minutes, 15:00~03:00 KST. Checks public RSS feeds; when a new confirmed big-club story shows up,
+# it starts the private card workflow right away (workflow_dispatch). No secrets in this repository's files.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   TPL_DISPATCH_TOKEN  fine-grained token — ONE private repository, permission "Actions: Read and write" only
+#   TPL_DISPATCH_REPO   owner/name of that private repository (kept secret so it never shows in public logs)
+name: TPL Watch
+
+on:
+  schedule:
+    - cron: "*/5 6-17 * * *"   # 15:00~02:55 KST
+    - cron: "0 18 * * *"       # 03:00 KST
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only for the keep-alive empty commit (GitHub pauses schedules after 60 days without commits)
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Restore memory (headlines already seen)
+        uses: actions/cache/restore@v4
+        with:
+          path: .state
+          key: watch-state-${{ github.run_id }}
+          restore-keys: watch-state-
+
+      - name: Check feeds
+        id: w
+        env:
+          TZ: Asia/Seoul
+          PYTHONIOENCODING: utf-8
+          DISPATCH_TOKEN: ${{ secrets.TPL_DISPATCH_TOKEN }}
+          DISPATCH_REPO: ${{ secrets.TPL_DISPATCH_REPO }}
+        run: python3 watch.py
+
+      - name: Save memory
+        if: always() && steps.w.outputs.changed == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: .state
+          key: watch-state-${{ github.run_id }}
+
+      - name: Keep schedule alive
+        run: |
+          age=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 86400 ))
+          if [ "$age" -ge 45 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -q -m "keep-alive" && git push -q
+          fi
