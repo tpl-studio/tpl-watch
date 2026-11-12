@@ -199,8 +199,17 @@ def run(now: datetime | None = None, fetcher=R.fetch, opener=urllib.request.urlo
     return res
 
 
+def ping(env=os.environ, opener=urllib.request.urlopen) -> dict:
+    """Manual connection test: send one dispatch now (no feeds, no memory change)."""
+    token, repo = env.get("DISPATCH_TOKEN", "").strip(), env.get("DISPATCH_REPO", "").strip()
+    if not (token and repo):
+        return {"why": "secrets TPL_DISPATCH_TOKEN / TPL_DISPATCH_REPO not set", "alert": True, "changed": False}
+    ok, why = dispatch(token, repo, load_conf(), opener)
+    return {"ping": "ok" if ok else "failed", "why": why, "alert": not ok, "changed": False}
+
+
 if __name__ == "__main__":
-    r = run()
+    r = ping() if os.environ.get("WATCH_PING") == "true" else run()
     print(" · ".join(f"{k}={v}" for k, v in r.items()))
     output(changed=1 if r.get("changed") else 0)
     sys.exit(1 if r.get("alert") else 0)
