@@ -185,6 +185,39 @@ def budget_ok(used: int, now: datetime, conf: dict) -> tuple[bool, str]:
     return proj <= limit, f"month used {used} min, projected {proj:.0f} / limit {limit:.0f}"
 
 
+# Evening guard: GitHub schedules in the private repo can be dropped (2026-11-13: the 18:55 and 19:15 sends never started).
+# In each window below (KST) the watcher starts the private guard workflow once, unless a guard run already started
+# in that window. The guard itself checks what is missing (cards made/sent, shorts, transfer check) and only then acts.
+GUARD_WINDOWS = [(17 * 60 + 20, 18 * 60 + 30), (19 * 60 + 2, 19 * 60 + 45), (19 * 60 + 52, 21 * 60)]
+
+
+def evening_guard(token: str, repo: str, now: datetime, opener=urllib.request.urlopen) -> str:
+    t = now.hour * 60 + now.minute
+    win = next((w for w in GUARD_WINDOWS if w[0] <= t < w[1]), None)
+    if not (win and token and repo):
+        return ""
+    start = now.replace(hour=win[0] // 60, minute=win[0] % 60, second=0, microsecond=0).astimezone(timezone.utc)
+    try:
+        d = _get(f"https://api.github.com/repos/{repo}/actions/workflows/guard.yml/runs?per_page=5"
+                 f"&created=%3E%3D{start.strftime('%Y-%m-%dT%H:%M:%SZ')}", token, opener)
+        if d.get("workflow_runs"):
+            return "guard already ran in this window"
+    except Exception as e:  # noqa: BLE001
+        return f"guard check failed ({type(e).__name__})"
+    req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/workflows/guard.yml/dispatches",
+                                 data=json.dumps({"ref": "main", "inputs": {"trigger": "watch"}}).encode(), method="POST",
+                                 headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+                                          "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json",
+                                          "User-Agent": "tpl-watch"})
+    try:
+        with opener(req, timeout=20) as r:
+            return f"guard dispatched (HTTP {r.status})"
+    except urllib.error.HTTPError as e:
+        return f"guard dispatch failed HTTP {e.code}"
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        return f"guard dispatch failed {type(e).__name__}"
+
+
 def output(**kv) -> None:
     p = os.environ.get("GITHUB_OUTPUT")
     if p:
@@ -196,6 +229,10 @@ def output(**kv) -> None:
 def run(now: datetime | None = None, fetcher=R.fetch, opener=urllib.request.urlopen, env=os.environ) -> dict:
     conf = load_conf()
     now = now or R.now_kst()
+    g = "" if env.get("WATCH_NO_GUARD") == "1" else \
+        evening_guard(env.get("DISPATCH_TOKEN", "").strip(), env.get("DISPATCH_REPO", "").strip(), now, opener)
+    if g:
+        print(f"evening guard: {g}")
     if not conf.get("watch", {}).get("all_day") and not R.in_window(now, conf):
         return {"why": "outside 15:00-03:00 KST", "changed": False}
     before = load_state()
