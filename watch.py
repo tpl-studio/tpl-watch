@@ -69,13 +69,27 @@ def club_words(conf: dict) -> set[str]:
     return {w for c in conf.get("big_clubs", []) for n in c.get("names", []) for w in R.norm(n).split()}
 
 
+KO_STOP = set("""
+단독 속보 종합 영상 포토 오늘 이번 결국 공식 보도 기자 현장 사진 감독 선수 경기 시즌 이적 영입 계약 우승 결과 대표팀
+""".split())
+
+
+def hot_words(conf: dict) -> set[str]:
+    return {w for cat in (conf.get("hot") or {}).get("categories", []) for n in cat.get("words", []) for w in R.norm(n).split()}
+
+
 def names_in(title: str, conf: dict) -> list[str]:
-    """Proper-noun-looking words (Capitalised, 4+ letters) that are not headline vocabulary or club names."""
-    skip = STOP | club_words(conf)
+    """Proper-noun-looking words: Capitalised Latin words (4+ letters) and Korean words of 3+ syllables (player/team names),
+    minus headline vocabulary, club names and sport names."""
+    skip = STOP | KO_STOP | club_words(conf) | hot_words(conf)
     out = []
     for w in re.findall(r"[A-ZÀ-ÖØ-Þ][\w'’-]{3,}", title or ""):
         n = R.norm(w).replace(" ", "")
         if len(n) >= 4 and n not in skip and n not in out:
+            out.append(n)
+    for w in re.findall(r"[가-힣]{3,}", title or ""):
+        n = re.sub(r"(은|는|이|가|을|를|의|에|와|과|도|로|으로|에서|까지|부터)$", "", w)
+        if len(n) >= 3 and n not in skip and n not in out:
             out.append(n)
     return out
 

@@ -1,9 +1,9 @@
 # TPL watcher settings (generated — do not edit by hand)
 
-window_start = "15:00"
-window_end = "03:00"
-grace_min = 60
-fresh_hours = 14
+window_start = "00:00"
+window_end = "23:59"
+grace_min = 0
+fresh_hours = 12
 
 [watch]
 workflow = "transfer.yml"
@@ -20,69 +20,148 @@ seen_days = 3
 
 [[big_clubs]]
 key = "manutd"
-names = ["Manchester United", "Man Utd", "Man United", "Man U", "MUFC"]
+names = ["Manchester United", "Man Utd", "Man United", "Man U", "MUFC", "맨유", "맨체스터 유나이티드"]
 
 [[big_clubs]]
 key = "mancity"
-names = ["Manchester City", "Man City", "MCFC"]
+names = ["Manchester City", "Man City", "MCFC", "맨시티", "맨체스터 시티"]
 
 [[big_clubs]]
 key = "liverpool"
-names = ["Liverpool", "LFC"]
+names = ["Liverpool", "LFC", "리버풀"]
 
 [[big_clubs]]
 key = "arsenal"
-names = ["Arsenal", "Gunners"]
+names = ["Arsenal", "Gunners", "아스널"]
 
 [[big_clubs]]
 key = "chelsea"
-names = ["Chelsea"]
+names = ["Chelsea", "첼시"]
 
 [[big_clubs]]
 key = "tottenham"
-names = ["Tottenham", "Tottenham Hotspur", "Spurs"]
+names = ["Tottenham", "Tottenham Hotspur", "Spurs", "토트넘"]
 
 [[big_clubs]]
 key = "realmadrid"
-names = ["Real Madrid"]
+names = ["Real Madrid", "레알 마드리드", "레알"]
 
 [[big_clubs]]
 key = "barcelona"
-names = ["Barcelona", "Barca", "Barça", "FC Barcelona"]
+names = ["Barcelona", "Barca", "Barça", "FC Barcelona", "바르셀로나", "바르사", "바르샤"]
 
 [[big_clubs]]
 key = "atletico"
-names = ["Atletico Madrid", "Atlético Madrid", "Atletico", "Atlético", "Atleti"]
+names = ["Atletico Madrid", "Atlético Madrid", "Atletico", "Atlético", "Atleti", "아틀레티코"]
 
 [[big_clubs]]
 key = "bayern"
-names = ["Bayern Munich", "Bayern München", "Bayern", "FC Bayern"]
+names = ["Bayern Munich", "Bayern München", "Bayern", "FC Bayern", "바이에른", "뮌헨"]
 
 [[big_clubs]]
 key = "dortmund"
-names = ["Borussia Dortmund", "Dortmund", "BVB"]
+names = ["Borussia Dortmund", "Dortmund", "BVB", "도르트문트"]
 
 [[big_clubs]]
 key = "psg"
-names = ["PSG", "Paris Saint-Germain", "Paris Saint Germain", "Paris SG"]
+names = ["PSG", "Paris Saint-Germain", "Paris Saint Germain", "Paris SG", "파리 생제르맹", "파리생제르맹"]
 
 [[big_clubs]]
 key = "juventus"
-names = ["Juventus", "Juve"]
+names = ["Juventus", "Juve", "유벤투스"]
 
 [[big_clubs]]
 key = "inter"
-names = ["Inter Milan", "Internazionale", "Inter"]
+names = ["Inter Milan", "Internazionale", "Inter", "인테르", "인터밀란", "인터 밀란"]
 not_names = ["Inter Miami"]
 
 [[big_clubs]]
 key = "milan"
-names = ["AC Milan", "Milan"]
-not_names = ["Inter Milan"]
+names = ["AC Milan", "Milan", "AC밀란", "AC 밀란"]
+not_names = ["Inter Milan", "인터밀란", "인터 밀란"]
 
-[[big_clubs]]
-key = "napoli"
-names = ["Napoli", "SSC Napoli"]
+[hot]
+enabled = true
+
+[[hot.categories]]
+name = "UFC"
+words = ["UFC", "옥타곤"]
+
+[[hot.categories]]
+name = "NBA"
+words = ["NBA", "미국프로농구"]
+
+[[hot.categories]]
+name = "해외야구"
+words = ["MLB", "메이저리그", "빅리그", "월드시리즈", "Major League Baseball", "World Series"]
+
+[[hot.categories]]
+name = "국내야구"
+words = ["KBO", "프로야구", "한국시리즈", "LG 트윈스", "KIA 타이거즈", "삼성 라이온즈", "두산 베어스", "KT 위즈", "SSG 랜더스", "롯데 자이언츠", "한화 이글스", "NC 다이노스", "키움 히어로즈"]
+
+[[hot.categories]]
+name = "국내축구"
+words = ["K리그", "K League", "K리그1", "K리그2", "축구대표팀", "축구 대표팀", "홍명보호", "코리아컵"]
+
+[[hot.categories]]
+name = "해외축구"
+overseas_football = true
+
+[[hot.korean_players]]
+ko = "손흥민"
+names = ["Son Heung-min", "Heung-min Son", "Son Heung-Min"]
+
+[[hot.korean_players]]
+ko = "이강인"
+names = ["Lee Kang-in", "Kang-in Lee"]
+
+[[hot.korean_players]]
+ko = "김민재"
+names = ["Kim Min-jae", "Min-jae Kim"]
+
+[[hot.korean_players]]
+ko = "황희찬"
+names = ["Hwang Hee-chan", "Hee-chan Hwang"]
+
+[[hot.korean_players]]
+ko = "이재성"
+names = ["Lee Jae-sung", "Jae-sung Lee"]
+
+[[hot.korean_players]]
+ko = "황인범"
+names = ["Hwang In-beom", "In-beom Hwang"]
+
+[[hot.korean_players]]
+ko = "오현규"
+names = ["Oh Hyeon-gyu", "Hyeon-gyu Oh"]
+
+[[hot.korean_players]]
+ko = "배준호"
+names = ["Bae Jun-ho", "Jun-ho Bae"]
+
+[[hot.korean_players]]
+ko = "양민혁"
+names = ["Yang Min-hyeok", "Min-hyeok Yang"]
+
+[[hot.korean_players]]
+ko = "설영우"
+names = ["Seol Young-woo", "Young-woo Seol"]
+
+[[hot.korean_players]]
+ko = "조규성"
+names = ["Cho Gue-sung", "Gue-sung Cho"]
+
+[[hot.korean_players]]
+ko = "정우영"
+names = ["Jeong Woo-yeong", "Woo-yeong Jeong"]
+
+[[hot.korean_players]]
+ko = "엄지성"
+names = ["Eom Ji-sung", "Ji-sung Eom"]
+
+[[hot.korean_players]]
+ko = "김지수"
+names = ["Kim Ji-soo"]
 
 [[feeds]]
 name = "Google 뉴스 · Here we go"
@@ -118,3 +197,38 @@ outlet = "BBC Sport"
 name = "Guardian Transfer window"
 url = "https://www.theguardian.com/football/transfer-window/rss"
 outlet = "The Guardian"
+
+[[feeds]]
+name = "구글 뉴스 · 해외축구"
+url = "https://news.google.com/rss/search?q=%ED%95%B4%EC%99%B8%EC%B6%95%EA%B5%AC+when:1d&hl=ko&gl=KR&ceid=KR:ko"
+aggregator = true
+
+[[feeds]]
+name = "구글 뉴스 · 국내축구"
+url = "https://news.google.com/rss/search?q=K%EB%A6%AC%EA%B7%B8+OR+%EC%B6%95%EA%B5%AC%EB%8C%80%ED%91%9C%ED%8C%80+when:1d&hl=ko&gl=KR&ceid=KR:ko"
+aggregator = true
+
+[[feeds]]
+name = "구글 뉴스 · KBO"
+url = "https://news.google.com/rss/search?q=KBO+OR+%ED%94%84%EB%A1%9C%EC%95%BC%EA%B5%AC+when:1d&hl=ko&gl=KR&ceid=KR:ko"
+aggregator = true
+
+[[feeds]]
+name = "구글 뉴스 · MLB"
+url = "https://news.google.com/rss/search?q=MLB+OR+%EB%A9%94%EC%9D%B4%EC%A0%80%EB%A6%AC%EA%B7%B8+when:1d&hl=ko&gl=KR&ceid=KR:ko"
+aggregator = true
+
+[[feeds]]
+name = "구글 뉴스 · NBA"
+url = "https://news.google.com/rss/search?q=NBA+when:1d&hl=ko&gl=KR&ceid=KR:ko"
+aggregator = true
+
+[[feeds]]
+name = "구글 뉴스 · UFC"
+url = "https://news.google.com/rss/search?q=UFC+when:1d&hl=ko&gl=KR&ceid=KR:ko"
+aggregator = true
+
+[[feeds]]
+name = "Google News · Big clubs"
+url = "https://news.google.com/rss/search?q=(%22Real+Madrid%22+OR+Barcelona+OR+Arsenal+OR+Liverpool+OR+%22Manchester+City%22+OR+%22Manchester+United%22+OR+Chelsea+OR+Tottenham+OR+Bayern+OR+PSG)+when:1d&hl=en-GB&gl=GB&ceid=GB:en"
+aggregator = true
