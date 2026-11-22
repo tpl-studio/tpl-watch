@@ -5,6 +5,10 @@
 3. When a NEW story appears, it asks the private workflow to run now (workflow_dispatch). That workflow does all
    fact checks, de-duplication and sending — this watcher only says "look now".
 
+4. Live match cards (2026-11-22): it also reads the public TPL SCORE match list. When a big match (★) or a match of a
+   Korean player's club finished about 20 minutes ago (01:00-07:00 KST finishes: at 07:00), it asks the private workflow
+   to run with trigger=match. All score/scorer checks, card making and sending happen in the private workflow.
+
 Follow-up headlines about a story it already reported (same big club + same proper noun) are skipped for
 story_hours: the private repo's 30-minute schedule picks those up as status updates.
 Budget guard: before each dispatch it reads the private repo's run history for this month and only dispatches while
@@ -113,7 +117,61 @@ def prune(state: dict, now: datetime, conf: dict) -> dict:
     return {"seen": {k: v for k, v in state.get("seen", {}).items() if keep(v, lim_seen)},
             "stories": [s for s in state.get("stories", []) if keep(s.get("at", ""), lim_story)],
             "fired": [x for x in state.get("fired", []) if keep(x, now - timedelta(days=2))],
+            "matches": {k: v for k, v in (state.get("matches") or {}).items() if keep(v, now - timedelta(days=3))},
             "fail_day": state.get("fail_day", "")}
+
+
+# ---------------------------------------------------------------------------
+# Live match cards: TPL SCORE finished matches (same timing rule as the private workflow)
+# ---------------------------------------------------------------------------
+def _hm(s: str) -> int:
+    h, m = s.split(":")
+    return int(h) * 60 + int(m)
+
+
+def match_ready(m: dict, mc: dict) -> datetime:
+    dur = int((mc.get("durations") or {}).get(m.get("sport", "soccer"), 120))
+    end = datetime.fromtimestamp(int(m["kickoff"]) / 1000, R.KST) + timedelta(minutes=dur)
+    t = end + timedelta(minutes=int(mc.get("wait_min", 20)))
+    a, b = (_hm(x) for x in mc.get("night", ["01:00", "07:00"]))
+    if a <= end.hour * 60 + end.minute < b:            # finished in the night → checked at 07:00, sent 07:30
+        ns = _hm(mc.get("night_send", "07:30")) - 30
+        t = max(t, end.replace(hour=ns // 60, minute=ns % 60, second=0, microsecond=0))
+    return t
+
+
+def match_due(matches: list[dict], state: dict, now: datetime, conf: dict) -> list[dict]:
+    mc = conf.get("match") or {}
+    if not mc.get("enabled"):
+        return []
+    fired = state.get("matches") or {}
+    within = timedelta(minutes=int(mc.get("dispatch_within_min", 90)))
+    out = []
+    for m in matches:
+        if m.get("status") != "FINISHED" or m.get("id") in fired or m.get("comp") not in mc.get("comps", []):
+            continue
+        big = bool(m.get("big") and m.get("big_reason"))
+        kor = m.get("home") in mc.get("korean_teams", []) or m.get("away") in mc.get("korean_teams", [])
+        if not (big or kor):
+            continue
+        r = match_ready(m, mc)
+        if r <= now <= r + within:
+            out.append(m)
+    return out
+
+
+def fetch_matches(conf: dict, fetcher=None) -> list[dict]:
+    url = (conf.get("match") or {}).get("score_url", "")
+    if not url:
+        return []
+    raw = (fetcher or R.fetch)(url)
+    data = json.loads(raw)
+    return [m for m in data.get("matches", []) if isinstance(m, dict)]
+
+
+def matches_today(state: dict, now: datetime) -> int:
+    day = now.strftime("%Y-%m-%d")
+    return sum(1 for v in (state.get("matches") or {}).values() if str(v).startswith(day) and not str(v).endswith("#batch"))
 
 
 def plan(state: dict, rel: list[dict], now: datetime, conf: dict) -> dict:
@@ -142,10 +200,10 @@ def fired_today(state: dict, now: datetime, conf: dict) -> int:
     return n
 
 
-def dispatch(token: str, repo: str, conf: dict, opener=urllib.request.urlopen) -> tuple[bool, str]:
+def dispatch(token: str, repo: str, conf: dict, opener=urllib.request.urlopen, trigger: str = "watch") -> tuple[bool, str]:
     w = conf.get("watch", {})
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{w.get('workflow', 'transfer.yml')}/dispatches"
-    body = json.dumps({"ref": w.get("ref", "main"), "inputs": {"trigger": "watch"}}).encode()
+    body = json.dumps({"ref": w.get("ref", "main"), "inputs": {"trigger": trigger}}).encode()
     req = urllib.request.Request(url, data=body, method="POST", headers={
         "Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json", "User-Agent": "tpl-watch"})
@@ -299,10 +357,44 @@ def run(now: datetime | None = None, fetcher=R.fetch, opener=urllib.request.urlo
                 state["fired"].append(now.isoformat())
     else:
         res["why"] = "no new story" + (f" ({len(p['follow'])} follow-up headline(s) left to the schedule)" if p["follow"] else "")
+    res.update(match_step(state, now, conf, env, opener, fetcher))
     res["changed"] = state != before
     if res["changed"]:
         save_state(state)
     return res
+
+
+def match_step(state: dict, now: datetime, conf: dict, env, opener, fetcher) -> dict:
+    """Finished ★ / Korean-player-club matches → one dispatch (trigger=match) for all that are due now."""
+    try:
+        due = match_due(fetch_matches(conf, fetcher if fetcher is not R.fetch else None), state, now, conf)
+    except Exception as e:  # noqa: BLE001 — score site down: the private hourly backup still checks
+        return {"match": f"score list failed ({type(e).__name__})"}
+    if not due:
+        return {"match": "no finished match due"}
+    for m in due:
+        print(f"  match due: {m.get('comp')} {m.get('home')} {m.get('home_score')}-{m.get('away_score')} {m.get('away')}")
+    token, repo = env.get("DISPATCH_TOKEN", "").strip(), env.get("DISPATCH_REPO", "").strip()
+    if not (token and repo):
+        return {"match": f"{len(due)} due — secrets not set, detected only"}
+    cap = int((conf.get("match") or {}).get("max_dispatch_per_day", 6))
+    if matches_today(state, now) >= cap:
+        for m in due:
+            state.setdefault("matches", {})[m["id"]] = now.isoformat() + "#cap"
+        return {"match": f"{len(due)} due — daily match dispatch cap {cap} (left to the private hourly backup)"}
+    used = month_used(token, repo, now, opener)
+    if used is not None:
+        ok_b, why_b = budget_ok(used, now, conf)
+        if not ok_b:
+            for m in due:
+                state.setdefault("matches", {})[m["id"]] = now.isoformat() + "#budget"
+            return {"match": f"{len(due)} due — monthly free-minute guard ({why_b})"}
+    ok, why = dispatch(token, repo, conf, opener, trigger="match")
+    if ok:
+        for i, m in enumerate(due):
+            state.setdefault("matches", {})[m["id"]] = now.isoformat() + ("" if i == 0 else "#batch")
+        return {"match": f"dispatched for {len(due)} match(es)", "match_dispatched": True}
+    return {"match": f"dispatch failed: {why}"}
 
 
 def ping(env=os.environ, opener=urllib.request.urlopen) -> dict:
