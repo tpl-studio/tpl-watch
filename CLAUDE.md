@@ -34,7 +34,7 @@
 
 | 자동화 | 사업부 | 실행 시간 | 어디서 | 주요 도구 |
 |---|---|---|---|---|
-| 3파트 카드뉴스 (음악 '오늘의 명곡' · 인물 · 스포츠 'FOOTBALL LEGEND ARCHIVE') | 설음 · 설문 · 설구 | 17:07 제작 → 18:53 시작·**19:00 정각 발송** → 19:51 실패 알림 → 20:47 '9시 업로드' 알림 | tpl-factory `factory.yml`(make-once) · `send.yml` · `guard.yml` | Groq(글), Wikipedia·Wikidata(사실), fact_guard(사실 확인), Gemini(1·6장), Cloudflare FLUX(2~5장), 텔레그램 |
+| 3파트 카드뉴스 (음악 '오늘의 명곡' · 인물 · 스포츠 'FOOTBALL LEGEND ARCHIVE') | 설음 · 설문 · 설구 | 17:07 제작 → 18:53 시작·**19:00 정각 발송** → 19:51 실패 알림 → 20:47 '9시 업로드' 알림 | tpl-factory `factory.yml`(make-once) · `send.yml` · `guard.yml` | Groq(글), Wikipedia·Wikidata(사실), fact_guard(사실 확인), Gemini(1장), Cloudflare FLUX(2~6장), 텔레그램 |
 | 스포츠 실시간 카드뉴스 (지금은 **★ 빅매치 경기 결과만**) | 설구 | 경기 끝나고 확인 뒤 바로 · 새벽 00~07시 종료분은 07:07 제작·07:30 발송 · 18:30~19:30 쉼 · 하루 상한 있음 | tpl-factory `transfer.yml` ← Cloudflare 감시기 5분마다 | ESPN 공개 API, 기사 2곳 스코어 대조, Gemini 표지 · FLUX 장면, 텔레그램 |
 | TPL 스코어 사이트 (승부예측·결과·예측왕) | 설구 | 축구 30분 · NBA 15분 · F1 은 레이스 주말 30분 | Cloudflare Worker + D1 (코드 `C:\Users\a0102\tpl-score`, GitHub 미등록) · 수집 보조 tpl-score-feed | football-data.org, balldontlie(NBA), Jolpica(F1), 실패 알림 개인 봇 |
 | 위인 쇼츠 '위인서재' | 설문 | **매일 17:07** 제작(카드뉴스와 같은 회차) → 19:00 받음 → 업로드 봇 ✅ 누르면 22:00 인스타 예약 | tpl-factory `factory.yml` → `cardnews/reel_daily.py` · `person_reel/tools/make_wisdom.py` | Gemini(대본)+사실 확인, Google Chirp 3 HD, Cloudflare FLUX, 대표님 Suno 곡 BGM |
@@ -43,7 +43,7 @@
 공통 규칙: 실제 사진(위키미디어) 안 씀 — AI 그림만. 사람 얼굴은 표지만(Gemini), 나머지는 얼굴 없는 장면(FLUX). 'TPL의 시선'은 절제된 관찰 1~2문장·비유 하나·해석임을 밝힘. 정치·정복 평가가 갈리는 인물 제외. 해시태그 정확히 5개.
 
 ### 카드뉴스 그림 규칙
-- **1장·6장 = Gemini**, **2~5장 = Cloudflare FLUX**. (3파트 공통. 실시간 카드는 표지 Gemini + 나머지 FLUX.)
+- **1장 = Gemini**, **2~6장 = Cloudflare FLUX**(얼굴 없는 장면). (3파트 공통. 실시간 카드도 표지 Gemini + 나머지 FLUX.)
 - 표지 검사에 떨어지거나 거절되면 무료 FLUX 로 대신한다.
 - 스포츠 5장 'TPL의 시선'은 수정 금지.
 
